@@ -32,24 +32,6 @@ namespace AI_Module {
     }
 
     export enum enFacePos {
-        // id = 0,
-        //% block="X_start"
-        // X_start = 0,
-        // //% block="Y_start"
-        // Y_start = X_start + 3,
-        // //% block="X_end"
-        // X_end = Y_start + 3,
-        // //% block="Y_end"
-        // Y_end = X_end + 3,
-        // //% block="X_center"
-        // X_center = Y_end + 3,
-        // //% block="Y_center"
-        // Y_center = X_center + 3,
-        // //% block="Width"
-        // Width = Y_center + 3,
-        // //% block="Height"
-        // Height = Width + 3,
-
         //% block="X_start"
         X_start = 7,
         //% block="Y_start"
@@ -65,28 +47,7 @@ namespace AI_Module {
     }
 
     export enum enObjRecPos {
-        // //% blcok="type"
-        // type = 0,
-        // // % block="X_start"
-        // X_start = type + 2,
-        // //% block="Y_start"
-        // Y_start = X_start + 3,
-        // //% block="X_end"
-        // X_end = Y_start + 3,
-        // //% block="Y_end"
-        // Y_end = X_end + 3,
-        // //% block="X_center"
-        // X_center = Y_end + 3,
-        // //% block="Y_center"
-        // Y_center = X_center + 3,
-        // //% block="Width"
-        // Width = Y_center + 3,
-        // //% block="Height"
-        // Height = Width + 3,
-
-        // Max_Value = Height + 3
-
-
+        //% block="X_start"
         X_start = 6,
         //% block="Y_start"
         Y_start = 8,
@@ -125,26 +86,6 @@ namespace AI_Module {
     }
 
     export enum enColorPos {
-
-        // //% block="X_start"
-        // X_start = 0,
-        // //% block="Y_start"
-        // Y_start = X_start + 3,
-        // //% block="X_end"
-        // X_end = Y_start + 3,
-        // //% block="Y_end"
-        // Y_end = X_end + 3,
-        // //% block="X_center"
-        // X_center = Y_end + 3,
-        // //% block="Y_center"
-        // Y_center = X_center + 3,
-        // //% block="Width"
-        // Width = Y_center + 3,
-        // //% block="Height"
-        // Height = Width + 3,
-
-        // Max_Value = Height + 3
-
         //% block="X_start"
         X_start = 4,
         //% block="Y_start"
@@ -161,20 +102,15 @@ namespace AI_Module {
 
 
     let Running_Func: enFunctions = enFunctions.Home_Pages
-    let recv_Data: string = ""
     let new_RecvLine: number = 0
 
-    /**
-     * 人脸识别参数
-     */
-    let face_count: number = 0
 
-    let Rx_Data: Buffer 
-    let aa: Array<uint8> 
+
+    let Rx_Data: Buffer = pins.createBuffer(52)
     let Rx_index: number = 0
     let Rx_Number: number = 0
-    let RecvFlag: number = 0
-
+    let Rx_Flag: number = 0
+    let uartData: Buffer = null
 
     
 /**********************************************************************/
@@ -182,52 +118,7 @@ namespace AI_Module {
 /**********************************************************************/
 /*内部函数区************************************************************/
 
-    function Uart_send(cmd: string) {
-        let buf = Buffer.fromUTF8(cmd)
-        serial.writeBuffer(buf)
-    }
-    
-    // 数字转化成字符串，保存n位，前面补零
-    function Int2str(num: number, len: number): string {
-        return ( "000" + num ).substr(-len)
-    }
-
-    function Str2int(str: string): number {
-        let val: number = +str
-        return val
-    }
-
-
-    // serial.onDataReceived(serial.delimiters(Delimiters.Dollar), function () {
-    //     recv_Data = serial.readUntil(serial.delimiters(Delimiters.Hash))
-    //     if (recv_Data.charAt(0) == '$') {
-    //         new_RecvLine = 1
-    //         let num = Str2int(recv_Data.substr(3, 2))
-    //         if (num == 0) {
-    //             recv_Data = "$0000000000000000000000000000000000000000000000000000000000000000000000000000000000#"
-    //         }
-    //     }
-    //     else {
-    //         recv_Data = ""
-    //         new_RecvLine = 0
-    //     }
-    // })
-
-    function clear_data(): void {
-        new_RecvLine = 0
-        recv_Data = ""
-        for (let i = 0; i < Rx_Number; i++) {
-            Rx_Data.setUint8(i, 0)
-        }
-        Rx_Number = 0
-    }
-
     function face_get_ID(index: number): number {
-        // if (Running_Func == enFunctions.Face_Recognition) {
-        //     return Str2int(recv_Data.charAt(7 + index * 25))
-        // }
-        // return -1
-
         if (Running_Func == enFunctions.Face_Recognition) {
             return Rx_Data.getUint8(6 + index * 10)
         }
@@ -243,23 +134,20 @@ namespace AI_Module {
         serial.writeBuffer(command)
     }
 
-    function readSerial() {
-        let readBuf: Buffer
+    
+
+    function parseData(buf: Buffer, num: number) {
         let Rx_Temp: number = 0
-        let Rx_Flag: number = 0
-        let now = control.millis()
-        Rx_Data = pins.createBuffer(50)
-        readBuf = pins.createBuffer(50)
-        while (true) {
-            readBuf = serial.readBuffer(1)
-            Rx_Temp = readBuf.getUint8(0)
+
+        for (let i = 0; i < num; i++) {
+            Rx_Temp = buf.getUint8(i)
+
             switch (Rx_Flag) {
                 case 0:
                     if (Rx_Temp == 0xFF) {
                         Rx_Flag = 1
                     }
-                    break
-                
+                    break 
                 case 1:
                     if(Rx_Temp == 0xFE)
                     {
@@ -272,37 +160,39 @@ namespace AI_Module {
                         Rx_Flag = 0
                     }
                     break
-                
                 case 2:
                     Rx_Data.setUint8(2, Rx_Temp)
                     Rx_Number = Rx_Temp + 3
                     Rx_index = 3
                     Rx_Flag = 3
-                    now = control.millis()
                     break
-
                 case 3:
                     Rx_Data.setUint8(Rx_index, Rx_Temp)
                     Rx_index++
-
+    
                     if(Rx_index >= Rx_Number - 1)
                     {
                         Rx_Flag = 0
                         Rx_Temp = 0
-                        RecvFlag = 1
                         new_RecvLine = 1
                     }
                     break
-
                 default:
+                    Rx_Flag = 0
+                    Rx_Temp = 0
+                    new_RecvLine = 0
                     break
             }
+        }
+    }
 
-                // if (control.millis() - now > 50) {
-                //     Rx_Flag = 0
-                //     Rx_Temp = 0
-                //     RecvFlag = 0
-                // }
+    function readSerial() {
+        while (true) {
+            let uartData = serial.readBuffer(0)
+            if (uartData.length > 0) {
+                // serial.writeBuffer(uartData)
+                parseData(uartData, uartData.length)
+            }
         }
     }
 
@@ -334,10 +224,6 @@ namespace AI_Module {
     //% blockID="AI_Module_Func_Select"
     //% block="Func_Select %func"
     export function Func_Select(func: enFunctions): void {
-        // let cmd = '$01' + Int2str(func, 2) + '#'
-        // Uart_send(cmd)
-        // Running_Func = func
-        
         Running_Func = func
         let cmd = [0xff, 0xfe, 0x02, 0x01, func & 0xff]
         serialSendArray(cmd)
@@ -370,18 +256,6 @@ namespace AI_Module {
     //% blockID="AI_Module_Request_Data"
     //% block="Request_Data"
     export function Request_Data(): boolean {
-        clear_data()
-
-        // let cmd = '$' + Int2str(Running_Func + 1, 2) + '#'
-        // Uart_send(cmd)
-
-        // basic.pause(10)
-
-        // if (new_RecvLine) {
-        //     return true
-        // }
-        // return false
-
         let cmd = [0xff, 0xfe, 0x01, (Running_Func + 1) & 0xff]
         serialSendArray(cmd)
         
@@ -394,20 +268,17 @@ namespace AI_Module {
     }
 
     /**
-     * Transfer_Data
+     * Clear_Data
     */
     //% weight=100
-    //% blockID="AI_Module_Transfer_Data"
-    //% block="Transfer_Data"
-    export function Transfer_Data(): void {
-        clear_data()
-
-        // let cmd = '$' + Int2str(Running_Func + 1, 2) + '#'
-        // Uart_send(cmd)
-
-        // while (!new_RecvLine) {
-        //     control.waitMicros(1)
-        // }
+    //% blockID="AI_Module_Clear_Data"
+    //% block="Clear_Data"
+    export function Clear_Data(): void {
+        new_RecvLine = 0
+        for (let i = 0; i < Rx_Number; i++) {
+            Rx_Data.setUint8(i, 0)
+        }
+        Rx_Number = 0
     }
 
     /**
@@ -417,66 +288,11 @@ namespace AI_Module {
     //% blockID="AI_Module_ReadSerialData"
     //% block="ReadSerialData"
     export function ReadSerialData(): void {
-        
-        // let readBuf: Buffer
-        // let Rx_Temp: number = 0
-        // let Rx_Flag: number = 0
-        // let now = control.millis()
-        // Rx_Data = pins.createBuffer(50)
-        // while (true) {
-        //     readBuf = serial.readBuffer(1)
-        //     Rx_Temp = readBuf.getUint8(0)
-        //     switch (Rx_Flag) {
-        //         case 0:
-        //             if (Rx_Temp == 0xFF) {
-        //                 Rx_Flag = 1
-        //             }
-        //             break
-                
-        //         case 1:
-        //             if(Rx_Temp == 0xFE)
-        //             {
-        //                 Rx_Data.setUint8(0, 0xFF)
-        //                 Rx_Data.setUint8(1, 0xFE)
-        //                 Rx_Flag = 2;
-                        
-        //             } else
-        //             {
-        //                 Rx_Flag = 0
-        //             }
-        //             break
-                
-        //         case 2:
-        //             Rx_Data.setUint8(2, Rx_Temp)
-        //             Rx_Number = Rx_Temp + 3
-        //             Rx_index = 3
-        //             Rx_Flag = 3
-        //             now = control.millis()
-        //             break
-
-        //         case 3:
-        //             Rx_Data.setUint8(Rx_index, Rx_Temp)
-        //             Rx_index++
-
-        //             if(Rx_index >= Rx_Number - 1)
-        //             {
-        //                 Rx_Flag = 0
-        //                 Rx_Temp = 0
-        //                 RecvFlag = 1
-        //                 new_RecvLine = 1
-        //             }
-        //             break
-
-        //         default:
-        //             break
-        //     }
-
-                // if (control.millis() - now > 50) {
-                //     Rx_Flag = 0
-                //     Rx_Temp = 0
-                //     RecvFlag = 0
-                // }
-        // }
+        uartData = serial.readBuffer(0)
+        if (uartData.length > 0) {
+            // serial.writeBuffer(uartData)
+            parseData(uartData, uartData.length)
+        }
     }
 
 
@@ -491,11 +307,6 @@ namespace AI_Module {
     //% block="Face_Get_Count"
     //% subcategory="Face_Recognition"
     export function Face_Get_Count(): number {
-        // if (Running_Func == enFunctions.Face_Recognition) {
-        //     return Str2int(recv_Data.substr(3, 2))
-        // }
-        // return -1
-
         if (Running_Func == enFunctions.Face_Recognition) {
             return Rx_Data.getUint8(4)
         }
@@ -510,11 +321,6 @@ namespace AI_Module {
     //% block="Face_Learned_Count"
     //% subcategory="Face_Recognition"
     export function Face_Learned_Count(): number {
-        // if (Running_Func == enFunctions.Face_Recognition) {
-        //     return Str2int(recv_Data.substr(5, 2))
-        // }
-        // return -1
-
         if (Running_Func == enFunctions.Face_Recognition) {
             return Rx_Data.getUint8(5)
         }
@@ -529,13 +335,6 @@ namespace AI_Module {
     //% block="Face_UnLearn_Count"
     //% subcategory="Face_Recognition"
     export function Face_UnLearn_Count(): number {
-        // if (Running_Func == enFunctions.Face_Recognition) {
-        //     let learned = Str2int(recv_Data.substr(5, 2))
-        //     let all = Str2int(recv_Data.substr(3, 2))
-        //     return all-learned
-        // }
-        // return -1
-
         if (Running_Func == enFunctions.Face_Recognition) {
             return Face_Get_Count() - Face_Learned_Count()
         }
@@ -570,11 +369,6 @@ namespace AI_Module {
     //% block="Face_Get_Postion |id %id|pos %pos"
     //% subcategory="Face_Recognition"
     export function Face_Get_Postion(id: number, pos: enFacePos): number {
-        // if (Running_Func == enFunctions.Face_Recognition) {
-            
-        //     return Str2int(recv_Data.substr(pos + 7, 3))
-        // }
-        // return -1
         let index_id = -1
         if (Running_Func == enFunctions.Face_Recognition) {
             for (let i = 0; i < 3; i++) {
@@ -612,11 +406,6 @@ namespace AI_Module {
     //% block="ObjRec_Get_Count"
     //% subcategory="Object_Recognition"
     export function ObjRec_Get_Count(): number {
-        // if (Running_Func == enFunctions.Object_Recognition) {
-        //     return Str2int(recv_Data.substr(3, 2))
-        // }
-        // return -1
-
         if (Running_Func == enFunctions.Object_Recognition) {
             return Rx_Data.getUint8(4)
         }
@@ -632,11 +421,6 @@ namespace AI_Module {
     //% block="ObjRec_Have_Classes"
     //% subcategory="Object_Recognition"
     export function ObjRec_Have_Classes(objClass: enObjectsClass): boolean {
-        // if (Running_Func == enFunctions.Object_Recognition) {
-        //     return Str2int(recv_Data.substr(5, 2))
-        // }
-        // return -1
-
         if (Running_Func == enFunctions.Object_Recognition) {
             for (let i = 0; i < 3; i++) {
                 if (objClass == Rx_Data.getUint8(5 + i * 10)) {
@@ -655,10 +439,6 @@ namespace AI_Module {
     //% block="ObjRec_Classes_Count"
     //% subcategory="Object_Recognition"
     export function ObjRec_Classes_Count(objClass: enObjectsClass): number {
-        // if (Running_Func == enFunctions.Object_Recognition) {
-        //     return Str2int(recv_Data.substr(5, 2))
-        // }
-        // return -1
         let num: number = 0
         if (Running_Func == enFunctions.Object_Recognition) {
             for (let i = 0; i < 3; i++) {
@@ -681,21 +461,12 @@ namespace AI_Module {
     //% subcategory="Object_Recognition"
     //% index.min=1 index.max=3 index.defl=1
     export function ObjRec_Get_Postion(index: number, objClass: enObjectsClass, pos: enObjRecPos): number {
-        // if (Running_Func == enFunctions.Object_Recognition) {
-        //     if (pos == enObjRecPos.type) {
-
-        //         return Str2int(recv_Data.substr(pos + 5, 2))
-        //     }
-        //     return Str2int(recv_Data.substr(pos + 5, 3))
-        // }
-        // return -1
-
         if (Running_Func == enFunctions.Object_Recognition) {
             if (pos == Rx_Data.getUint8(5 + index * 10)) {
 
-                return Str2int(recv_Data.substr(pos + 5, 2))
+                return Rx_Data.getUint8(pos + 5)
             }
-            return Str2int(recv_Data.substr(pos + 5, 3))
+            return Rx_Data.getUint8(pos + 5)
         }
         return -1
     }
@@ -733,11 +504,6 @@ namespace AI_Module {
     //% block="Color_Get_Postion |pos %pos"
     //% subcategory="Color_Discrimination"
     export function Color_Get_Postion(pos: enColorPos): number {
-        // if (Running_Func == enFunctions.Color_Discrimination) {
-        //     return Str2int(recv_Data.substr(pos, 3))
-        // }
-        // return -1
-
         if (Running_Func == enFunctions.Color_Discrimination) {
             if (pos % 3 == 0) {
                 return Rx_Data.getUint8(pos)
