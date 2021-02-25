@@ -1,11 +1,10 @@
 {
     "name": "AI_Module",
-    "version": "0.0.0",
+    "version": "0.0.1",
     "description": "AI_Module for microbit",
     "license": "MIT",
     "dependencies": {
         "core": "*",
-        "radio": "*",
         "microphone": "*"
     },
     "files": [
