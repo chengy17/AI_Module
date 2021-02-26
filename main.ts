@@ -170,7 +170,7 @@ namespace AI_Module {
                     Rx_Data.setUint8(Rx_index, Rx_Temp)
                     Rx_index++
     
-                    if(Rx_index >= Rx_Number - 1)
+                    if(Rx_index >= Rx_Number)
                     {
                         Rx_Flag = 0
                         Rx_Temp = 0
@@ -196,9 +196,6 @@ namespace AI_Module {
         }
     }
 
-
-
-
 /**********************************************************************/
 /**********************************************************************/
 /**********************************************************************/
@@ -209,12 +206,18 @@ namespace AI_Module {
      * Initialize AI_Module
     */
     //% weight=100
+    //% blockExternalInputs=1
+    //% Tx.defl=SerialPin.P1 Rx.defl=SerialPin.P2
+    //% Tx.fieldEditor="gridpicker" Tx.fieldOptions.columns=3
+    //% Tx.fieldOptions.tooltips="false"
+    //% Rx.fieldEditor="gridpicker" Rx.fieldOptions.columns=3
+    //% Rx.fieldOptions.tooltips="false"
     //% blockId=AI_Module_init
-    //% block="AI_Module_init"
-    export function AI_Module_init(): void {
-        serial.setRxBufferSize(50)
+    //% block="AI_Module_init|Tx %Tx|Rx %Rx|baudrate %baud"
+    export function AI_Module_init(Tx: SerialPin, Rx: SerialPin, baud: BaudRate): void {
         basic.pause(10)
-        control.inBackground(readSerial)
+        serial.setRxBufferSize(50)
+        serial.redirect(Tx, Rx, baud)
     }
 
     /**
@@ -418,7 +421,7 @@ namespace AI_Module {
     */
     //% weight=100
     //% blockID="AI_Module_ObjRec_Have_Classes"
-    //% block="ObjRec_Have_Classes"
+    //% block="ObjRec_Have_Classes %objClass"
     //% subcategory="Object_Recognition"
     export function ObjRec_Have_Classes(objClass: enObjectsClass): boolean {
         if (Running_Func == enFunctions.Object_Recognition) {
@@ -436,7 +439,7 @@ namespace AI_Module {
     */
     //% weight=100
     //% blockID="AI_Module_ObjRec_Classes_Count"
-    //% block="ObjRec_Classes_Count"
+    //% block="ObjRec %objClass Count"
     //% subcategory="Object_Recognition"
     export function ObjRec_Classes_Count(objClass: enObjectsClass): number {
         let num: number = 0
@@ -457,16 +460,41 @@ namespace AI_Module {
     */
     //% weight=100
     //% blockID="AI_Module_ObjRec_Get_Postion"
-    //% block="ObjRec_Get_Postion |index %index|type %type|pos %pos"
+    //% block="ObjRec index %index|objClass %objClass|pos %pos"
     //% subcategory="Object_Recognition"
     //% index.min=1 index.max=3 index.defl=1
     export function ObjRec_Get_Postion(index: number, objClass: enObjectsClass, pos: enObjRecPos): number {
         if (Running_Func == enFunctions.Object_Recognition) {
-            if (pos == Rx_Data.getUint8(5 + index * 10)) {
-
-                return Rx_Data.getUint8(pos + 5)
+            let objTempBuf: Buffer = pins.createBuffer(30)
+            objTempBuf.fill(0, 0, objTempBuf.length)
+            let count = 0
+            // 把检测到的对象数据重新排列
+            for (let i = 0; i < 3; i++) {
+                if (objClass == Rx_Data.getUint8(5 + i * 10)) {
+                    for (let ii = 0; ii < 10; ii++) {
+                        objTempBuf.setUint8(ii + count * 10, Rx_Data.getUint8(ii + 5 + i * 10))
+                    }
+                    count++
+                }
             }
-            return Rx_Data.getUint8(pos + 5)
+            // count = ObjRec_Classes_Count(objClass)
+            if (count > 0) {
+                if (index > count) {
+                    return -3
+                }
+
+                if (pos % 3 == 0) {
+                    let val_H = objTempBuf.getUint8((index - 1) * 10 + pos - 5)
+                    let val_L = objTempBuf.getUint8((index - 1) * 10 + pos - 5 + 1)
+                    return (val_H << 8 | val_L)
+                }
+                else {
+                    return objTempBuf.getUint8((index - 1) * 10 + pos - 5)
+                }
+            }
+            else {
+                return -2
+            }
         }
         return -1
     }
@@ -511,7 +539,7 @@ namespace AI_Module {
             else {
                 let pos_H = Rx_Data.getUint8(pos)
                 let pos_L = Rx_Data.getUint8(pos + 1)
-                return (pos_H << 8 + pos_L)
+                return (pos_H << 8 | pos_L)
             }
         }
         return -1
