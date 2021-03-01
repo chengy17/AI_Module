@@ -233,6 +233,28 @@ namespace AI_Module {
     }
 
     /**
+     * Func_Current
+    */
+    //% weight=100
+    //% blockID="AI_Module_Func_Current"
+    //% block="Func_Current %func"
+    export function Func_Current(func: enFunctions): boolean {
+        let cmd = [0xff, 0xfe, 0x02, 0x01, 0xff]
+        serialSendArray(cmd)
+        let func_num = func & 0xff
+
+        basic.pause(2)
+
+        if (new_RecvLine) {
+            let read_func = Rx_Data.getUint8(4)
+            Running_Func = read_func
+            return func_num == read_func
+        }
+        return false
+    }
+
+
+    /**
      * Func_Name
     */
     //% weight=100
@@ -249,6 +271,15 @@ namespace AI_Module {
     //% blockID="AI_Module_Func_Running"
     //% block="Func_Running"
     export function Func_Running(): enFunctions {
+        let cmd = [0xff, 0xfe, 0x02, 0x01, 0xff]
+        serialSendArray(cmd)
+        
+        basic.pause(10)
+
+        if (new_RecvLine) {
+            let read_func = Rx_Data.getUint8(4)
+            Running_Func = read_func
+        }
         return Running_Func
     }
 
