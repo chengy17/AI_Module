@@ -20,12 +20,12 @@ namespace AI_Module {
         Color_Discrimination,
         //% block="Automatic_Drive"
         Automatic_Drive,
-        //% block="Find_Barcode"
-        Find_Barcode,
         //% block="Find_Qrcode"
         Find_Qrcode,
         //% block="Find_AprilTag"
         Find_AprilTag,
+        //% block="Find_Barcode"
+        Find_Barcode,
         //% block="Shape_Detection"
         Shape_Detection,
 
@@ -99,6 +99,53 @@ namespace AI_Module {
         //% block="Height"
         Height = 12,
     }
+
+    export enum enQRCodePos {
+        //% block="X_start"
+        X_start = 4,
+        //% block="Y_start"
+        Y_start = 6,
+        //% block="X_center"
+        X_center = 7,
+        //% block="Y_center"
+        Y_center = 9,
+        //% block="Width"
+        Width = 10,
+        //% block="Height"
+        Height = 12,
+    }
+
+    export enum enAprilTagPos {
+        //% block="X_start"
+        X_start = 6,
+        //% block="Y_start"
+        Y_start = 8,
+        //% block="X_center"
+        X_center = 9,
+        //% block="Y_center"
+        Y_center = 11,
+        //% block="Width"
+        Width = 12,
+        //% block="Height"
+        Height = 14,
+    }
+
+    export enum enBarCodePos {
+        //% block="X_start"
+        X_start = 4,
+        //% block="Y_start"
+        Y_start = 6,
+        //% block="X_center"
+        X_center = 7,
+        //% block="Y_center"
+        Y_center = 9,
+        //% block="Width"
+        Width = 10,
+        //% block="Height"
+        Height = 12,
+    }
+
+    
 
 
     let g_Running_Func: enFunctions = enFunctions.Home_Pages
@@ -596,29 +643,187 @@ namespace AI_Module {
     /////////////////////////////////////////////////////////////////////////
     /////////////////////////////////////////////////////////////////////////
 
+    /**
+     * Qrcode_Have
+    */
+    //% weight=100
+    //% blockID="AI_Module_Qrcode_Have"
+    //% block="Qrcode_Have"
+    //% subcategory="Qrcode_Recognition"
     export function Qrcode_Have(): boolean {
         if (g_Running_Func == enFunctions.Find_Qrcode) {
-            
+            if (g_Rx_Number > 13) {
+                return true
+            }
         }
         return false
     }
     
+    /**
+     * Qrcode_Get_Postion
+    */
+    //% weight=100
+    //% blockID="AI_Module_Qrcode_Get_Postion"
+    //% block="Qrcode_Get_Postion %pos"
+    //% subcategory="Qrcode_Recognition"
+    export function Qrcode_Get_Postion(pos: enQRCodePos): number {
+        if (Qrcode_Have()) {
+            if (pos % 3 == 0) {
+                return g_Rx_Data.getUint8(pos)
+            }
+            else {
+                let pos_H = g_Rx_Data.getUint8(pos)
+                let pos_L = g_Rx_Data.getUint8(pos + 1)
+                return (pos_H << 8 | pos_L)
+            }
+        }
+        return -1
+    }
 
 
-
+    /**
+     * Qrcode_Get_Data
+    */
+    //% weight=100
+    //% blockID="AI_Module_Qrcode_Get_Data"
+    //% block="Qrcode_Get_Data"
+    //% subcategory="Qrcode_Recognition"
     export function Qrcode_Get_Data(): string {
         let result: string = ""
-        if (g_Running_Func == enFunctions.Find_Qrcode) {
-            if (g_Rx_Number > 13) {
-                let buf: Buffer = pins.createBuffer(g_Rx_Number-13)
-                for (let i = 0; i < g_Rx_Number - 13; i++) {
-                    buf.setUint8(i, g_Rx_Data.getUint8(i+13))
-                }
-                result = buf.toString()
+        if (Qrcode_Have()) {
+            let buf: Buffer = pins.createBuffer(g_Rx_Number-13)
+            for (let i = 0; i < g_Rx_Number - 13; i++) {
+                buf.setUint8(i, g_Rx_Data.getUint8(i+13))
             }
+            result = buf.toString()
         }
         return result
     }
 
+
+
+    /////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////
+
+    /**
+     * Tag_Have
+    */
+    //% weight=100
+    //% blockID="AI_Module_Tag_Have"
+    //% block="AprilTag_Have"
+    //% subcategory="AprilTag_Recognition"
+    export function Tag_Have(): boolean {
+        if (g_Running_Func == enFunctions.Find_AprilTag) {
+            if (g_Rx_Number > 5) {
+                return true
+            }
+        }
+        return false
+    }
+
+
+    /**
+     * Tag_Get_Postion
+    */
+    //% weight=100
+    //% blockID="AI_Module_Tag_Get_Postion"
+    //% block="Tag_Get_Postion %pos"
+    //% subcategory="AprilTag_Recognition"
+    export function Tag_Get_Postion(pos: enAprilTagPos): number {
+        if (Tag_Have()) {
+            if (pos % 3 != 0) {
+                return g_Rx_Data.getUint8(pos)
+            }
+            else {
+                let pos_H = g_Rx_Data.getUint8(pos)
+                let pos_L = g_Rx_Data.getUint8(pos + 1)
+                return (pos_H << 8 | pos_L)
+            }
+        }
+        return -1
+    }
+
+
+    /**
+     * Tag_Get_ID
+    */
+    //% weight=100
+    //% blockID="AI_Module_Tag_Get_ID"
+    //% block="Tag_Get_ID"
+    //% subcategory="AprilTag_Recognition"
+    export function Tag_Get_ID(): number {
+        if (Tag_Have()) {
+            let pos_H = g_Rx_Data.getUint8(4)
+            let pos_L = g_Rx_Data.getUint8(5)
+            return (pos_H << 8 | pos_L)
+        }
+        return -1
+    }
+
+
+
+
+    /////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////
+
+    /**
+     * BarCode_Have
+    */
+    //% weight=100
+    //% blockID="AI_Module_BarCode_Have"
+    //% block="BarCode_Have"
+    //% subcategory="BarCode_Recognition"
+    export function BarCode_Have(): boolean {
+        if (g_Running_Func == enFunctions.Find_Barcode) {
+            if (g_Rx_Number > 5) {
+                return true
+            }
+        }
+        return false
+    }
+
+
+    /**
+     * BarCode_Get_Postion
+    */
+    //% weight=100
+    //% blockID="AI_Module_BarCode_Get_Postion"
+    //% block="BarCode_Get_Postion %pos"
+    //% subcategory="BarCode_Recognition"
+    export function BarCode_Get_Postion(pos: enBarCodePos): number {
+        if (BarCode_Have()) {
+            if (pos % 3 == 0) {
+                return g_Rx_Data.getUint8(pos)
+            }
+            else {
+                let pos_H = g_Rx_Data.getUint8(pos)
+                let pos_L = g_Rx_Data.getUint8(pos + 1)
+                return (pos_H << 8 | pos_L)
+            }
+        }
+        return -1
+    }
+
+
+    /**
+     * BarCode_Get_Data
+    */
+    //% weight=100
+    //% blockID="AI_Module_BarCode_Get_Data"
+    //% block="BarCode_Get_Data"
+    //% subcategory="BarCode_Recognition"
+    export function BarCode_Get_Data(): string {
+        let result: string = ""
+        if (BarCode_Have()) {
+            let buf: Buffer = pins.createBuffer(g_Rx_Number-13)
+            for (let i = 0; i < g_Rx_Number - 13; i++) {
+                buf.setUint8(i, g_Rx_Data.getUint8(i+13))
+            }
+            result = buf.toString()
+        }
+        return result
+    }
 
 }
