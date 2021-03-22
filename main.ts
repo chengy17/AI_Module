@@ -493,7 +493,7 @@ namespace AI_Module {
                 else {
                     let pos_H = g_Rx_Data.getUint8(pos + index_id*10)
                     let pos_L = g_Rx_Data.getUint8(pos + 1 + index_id*10)
-                    return (pos_H << 8 + pos_L)
+                    return (pos_H << 8 | pos_L)
                 }
             }
         }
