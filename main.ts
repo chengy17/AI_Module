@@ -18,8 +18,8 @@ namespace AI_Module {
         Object_Tracking,
         //% block="Color_Discrimination"
         Color_Discrimination,
-        //% block="Automatic_Drive"
-        Automatic_Drive,
+        //% block="Find_Line"
+        Find_Line,
         //% block="Find_Qrcode"
         Find_Qrcode,
         //% block="Find_AprilTag"
@@ -98,6 +98,19 @@ namespace AI_Module {
         Width = 10,
         //% block="Height"
         Height = 12,
+    }
+
+    export enum enLinePos {
+        //% block="X_start"
+        X_start = 4,
+        //% block="Y_start"
+        Y_start = 6,
+        //% block="X_stop"
+        X_stop = 7,
+        //% block="Y_stop"
+        Y_stop = 9,
+        //% block="Direction"
+        Direction = 10,
     }
 
     export enum enQRCodePos {
@@ -584,6 +597,51 @@ namespace AI_Module {
             }
             else {
                 return -2
+            }
+        }
+        return -1
+    }
+
+
+    /////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////
+
+    /**
+     * Line_Have
+    */
+    //% weight=100
+    //% blockID="AI_Module_Line_Have"
+    //% block="Line_Have"
+    //% subcategory="Find_Line"
+    export function Line_Have(): boolean {
+        if (g_Running_Func == enFunctions.Find_Line) {
+            if (g_Rx_Number > 5) {
+                return true
+            }
+        }
+        return false
+    }
+    
+    /**
+     * Line_Get_Postion
+    */
+    //% weight=100
+    //% blockID="AI_Module_Line_Get_Postion"
+    //% block="Line_Get_Postion %pos"
+    //% subcategory="Find_Line"
+    export function Line_Get_Postion(pos: enLinePos): number {
+        if (Line_Have()) {
+            if (pos == enLinePos.Direction) {
+                return g_Rx_Data.getUint8(pos)
+            }
+            if (pos % 3 == 0) {
+                return g_Rx_Data.getUint8(pos)
+            }
+            else {
+                let pos_H = g_Rx_Data.getUint8(pos)
+                let pos_L = g_Rx_Data.getUint8(pos + 1)
+                return (pos_H << 8 | pos_L)
             }
         }
         return -1
