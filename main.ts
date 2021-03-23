@@ -672,6 +672,24 @@ namespace AI_Module {
     }
 
 
+
+    /**
+     * Color_Have_Learned
+    */
+    //% weight=100
+    //% blockID="AI_Module_Color_Have_Learned"
+    //% block="Color_Have_Learned"
+    //% subcategory="Color_Discrimination"
+    export function Color_Have_Learned(): boolean {
+        if (g_Running_Func == enFunctions.Color_Discrimination) {
+            if (g_Rx_Number > 6) {
+                return true
+            }
+        }
+        return false
+    }
+
+
     /**
      * Color_Get_Postion
     */
