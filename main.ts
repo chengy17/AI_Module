@@ -62,8 +62,8 @@ namespace AI_Module {
     }
 
     export enum enObjectsClass {
-        Nothing = 0,
-        aeroplane,
+        // Nothing = 0,
+        aeroplane = 1,
         bicycle,
         bird,
         boat,
